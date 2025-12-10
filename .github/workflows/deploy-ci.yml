@@ -32,6 +32,16 @@ jobs:
         run: |
           docker build -t elephant-boardroom:latest .
 
+      - name: Test Docker image
+        run: |
+          chmod +x test.docker.sh
+          ./scripts/test.docker.sh
+
+      - name: Run Security Scans
+        run: |
+          chmod +x scripts/security-test.sh
+          ./scripts/security-test.sh
+
       - name: Tag for Local Registry
         run: |
           docker tag elephant-boardroom:latest localhost:5000/elephant-boardroom:latest
@@ -39,6 +49,6 @@ jobs:
       - name: Push Image to Local Registry
         run: |
           docker push localhost:5000/elephant-boardroom:latest
-          
+
       - name: Restart Deployment
         run: kubectl rollout restart deployment/elephant-boardroom -n elephant-boardroom

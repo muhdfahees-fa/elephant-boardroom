@@ -34,7 +34,7 @@ jobs:
 
       - name: Test Docker image
         run: |
-          chmod +x test.docker.sh
+          chmod +x ./scripts/test.docker.sh
           ./scripts/test.docker.sh
 
       - name: Run Security Scans

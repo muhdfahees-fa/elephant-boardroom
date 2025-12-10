@@ -34,12 +34,10 @@ jobs:
 
       - name: Test Docker image
         run: |
-          chmod +x ./scripts/test.docker.sh
           ./scripts/test.docker.sh
 
       - name: Run Security Scans
         run: |
-          chmod +x scripts/security-test.sh
           ./scripts/security-test.sh
 
       - name: Tag for Local Registry

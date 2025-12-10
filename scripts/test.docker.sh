@@ -3,7 +3,7 @@
 echo "Testing Docker Image..."
 
 # Run container in background
-CONTAINER_ID=$(docker run -d -p 3001:3000 elephant-boardroom:test)
+CONTAINER_ID=$(docker run -d -p 3001:3000 elephant-boardroom:latest)
 
 # Wait for container to start
 sleep 5

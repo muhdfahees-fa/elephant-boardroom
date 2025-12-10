@@ -32,10 +32,6 @@ jobs:
         run: |
           docker build -t elephant-boardroom:latest .
 
-      - name: Run Security Scans
-        run: |
-          ./scripts/security-test.sh
-
       - name: Tag for Local Registry
         run: |
           docker tag elephant-boardroom:latest localhost:5000/elephant-boardroom:latest

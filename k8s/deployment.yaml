@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: elephant-boardroom
+  namespace: elephant-boardroom
+  labels:
+    app: elephant-boardroom
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: elephant-boardroom
+  template:
+    metadata:
+      labels:
+        app: elephant-boardroom
+    spec:
+      containers:
+      - name: elephant-boardroom
+        image: localhost:5000/elephant-boardroom:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3000
+          name: http
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 5

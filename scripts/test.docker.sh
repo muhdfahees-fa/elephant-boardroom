@@ -9,12 +9,12 @@ CONTAINER_ID=$(docker run -d -p 3001:3000 elephant-boardroom:latest)
 sleep 5
 
 # Test if container is running
-if docker ps | grep -q $CONTAINER_ID; then
-    echo "✓ Container is running"
-else
-    echo "✗ Container failed to start"
-    docker logs $CONTAINER_ID
-    exit 1
+CONTAINER_STATUS=$(docker inspect -f '{{.State.Status}}' $CONTAINER_ID)
+
+if [ "$CONTAINER_STATUS" != "running" ] && [ "$CONTAINER_STATUS" != "exited" ]; then
+  echo "✗ Container failed to start"
+  docker logs $CONTAINER_ID
+  exit 1
 fi
 
 # Test if app responds

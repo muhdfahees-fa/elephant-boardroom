@@ -1,47 +1,63 @@
 #!/bin/bash
+set -e
 
-echo "Testing Docker Image..."
+IMAGE="elephant-boardroom:latest"
+CONTAINER_NAME="elephant-boardroom-test"
+CONTAINER_PORT=3000
 
-# Run container in background
-CONTAINER_ID=$(docker run -d -p 3001:3000 elephant-boardroom:latest)
+echo "Testing Docker Image: $IMAGE"
 
-# Wait for container to start
-sleep 5
+# Always cleanup
+cleanup() {
+  docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
+}
+trap cleanup EXIT
 
-# Test if container is running
-CONTAINER_STATUS=$(docker inspect -f '{{.State.Status}}' $CONTAINER_ID)
+# Start container with RANDOM host port
+CONTAINER_ID=$(docker run -d \
+  --name "$CONTAINER_NAME" \
+  -p 0:$CONTAINER_PORT \
+  "$IMAGE")
 
-if [ "$CONTAINER_STATUS" != "running" ] && [ "$CONTAINER_STATUS" != "exited" ]; then
-  echo "✗ Container failed to start"
-  docker logs $CONTAINER_ID
+if [ -z "$CONTAINER_ID" ]; then
+  echo "✗ Failed to start container"
   exit 1
 fi
 
-# Test if app responds
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3001)
+echo "✓ Container started"
 
-if [ "$HTTP_CODE" -eq 200 ]; then
-    echo "✓ App is responding (HTTP $HTTP_CODE)"
-else
-    echo "✗ App is not responding (HTTP $HTTP_CODE)"
-    docker logs $CONTAINER_ID
-    docker stop $CONTAINER_ID
-    docker rm $CONTAINER_ID
-    exit 1
+# Get dynamically assigned port
+HOST_PORT=$(docker inspect \
+  --format='{{(index (index .NetworkSettings.Ports "'$CONTAINER_PORT'/tcp") 0).HostPort}}' \
+  "$CONTAINER_NAME")
+
+echo "✓ Mapped port: localhost:$HOST_PORT → $CONTAINER_PORT"
+
+# Wait for app to respond (max ~30s)
+echo "Waiting for app to respond..."
+for i in {1..15}; do
+  HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:$HOST_PORT || true)
+  if [ "$HTTP_CODE" == "200" ]; then
+    break
+  fi
+  sleep 2
+done
+
+if [ "$HTTP_CODE" != "200" ]; then
+  echo "✗ App did not become ready"
+  docker logs "$CONTAINER_NAME"
+  exit 1
 fi
 
-# Test specific content
-if curl -s http://localhost:3001 | grep -q "Hello from Elephant Board Room"; then
-    echo "✓ Content is correct"
+echo "✓ App is responding (HTTP 200)"
+
+# Content check
+if curl -s http://localhost:$HOST_PORT | grep -q "Hello from Elephant Board Room"; then
+  echo "✓ Content is correct"
 else
-    echo "✗ Content is missing"
-    docker stop $CONTAINER_ID
-    docker rm $CONTAINER_ID
-    exit 1
+  echo "✗ Content missing or incorrect"
+  docker logs "$CONTAINER_NAME"
+  exit 1
 fi
 
-# Cleanup
-docker stop $CONTAINER_ID
-docker rm $CONTAINER_ID
-
-echo "✓ All Docker tests passed!"
+echo "✅ All Docker tests passed!"
